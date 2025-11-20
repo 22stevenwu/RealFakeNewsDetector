@@ -1,8 +1,8 @@
 # RealFakeNewsDetector
 
-- To create virtual environment, run "python3 -m venv venv", then activate it by running "source/venv/bins/activate"
+- To create a virtual environment, run "python3 -m venv venv", then activate it by running "source/venv/bins/activate"
     - Then run: "pip install -r requirements.txt" to download all dependencies
-- Raw datasets are in datasets/, datasets/processed contains cleaned datasets 
+- Raw datasets are in datasets/, datasets/processed contains combined datasets 
 - pipeline.py contains all core processing + model utilities:
     1. Data Loading
         - load_kaggle() downloads and loads the Kaggle Fake News dataset
