@@ -1,6 +1,6 @@
 # RealFakeNewsDetector
 
-- To activate virtual environment: run "source/venv/bins/activate"
+- To create virtual environment, run "python3 -m venv venv", then activate it by running "source/venv/bins/activate"
     - Then run: "pip install -r requirements.txt" to download all dependencies
 - Raw datasets are in datasets/, datasets/processed contains cleaned datasets 
 - pipeline.py contains all core processing + model utilities:
