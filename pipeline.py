@@ -8,6 +8,8 @@ import json
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report, accuracy_score
 
 def load_kaggle():
@@ -27,13 +29,13 @@ def load_kaggle():
     
     return df.copy()
 
-def combine_politifact(
+def combine_dataset(
     fake_path: str = "datasets/politifact/politifact_fake.csv",
     real_path: str = "datasets/politifact/politifact_real.csv",
     out_path: str = "datasets/processed/politifact_combined.csv",
 ):
     """
-    Combine politifact_fake.csv and politifact_real.csv into one CSV
+    Combine datasets into one CSV
     with a binary label column: 0 = fake, 1 = real.
     Any existing columns are preserved.
     """
@@ -58,7 +60,7 @@ def combine_politifact(
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     combined.to_csv(out_path, index=False)
 
-    print(f"Saved combined Politifact dataset to: {out_path}")
+    print(f"Saved combined dataset to: {out_path}")
     print("Shape:", combined.shape)
 
 def append_text_column(csv_path, dataset_type):
@@ -75,7 +77,7 @@ def append_text_column(csv_path, dataset_type):
     
     # Get the base directory for datasets
     base_dir = Path(csv_path).parent
-    json_base_dir = base_dir / "politifact" / dataset_type
+    json_base_dir = base_dir / dataset_type
     
     # List to store text values
     texts = []
@@ -144,7 +146,15 @@ def clean_dataset(df):
     df = df.copy()
     # remove duplicates and empty
     df = df.drop_duplicates(subset=["text"])
-    df = df.dropna(subset=["text", "text"])
+    df = df.dropna(subset=["title", "text"])
+
+     # cast to string just in case
+    df["title"] = df["title"].astype(str)
+    df["text"]  = df["text"].astype(str)
+    
+    # drop empty / whitespace-only title/text
+    df = df[df["title"].str.strip() != ""]
+    df = df[df["text"].str.strip() != ""]
 
     #Clean title and text
     df["title"] = df["title"].apply(clean_text)
@@ -161,9 +171,33 @@ def train_logreg(X_train, y_train, max_features=5000, ngram_range=(1, 2), max_it
     X_train_tfidf = vectorizer.fit_transform(X_train)
     
     # Train model
-    model = LogisticRegression(max_iter=max_iter)
+    model = LogisticRegression(max_iter=max_iter, class_weight="balanced", random_state=42)
     model.fit(X_train_tfidf, y_train)
     
+    return model, vectorizer
+
+def train_svm(X_train, y_train, max_features=5000, ngram_range=(1, 2), max_iter=1000, C=1.0):
+    # Vectorize text
+    vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range)
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+    
+    # Train model
+    model = LinearSVC(max_iter=max_iter, C=C, random_state=42)
+    model.fit(X_train_tfidf, y_train)
+    
+    return model, vectorizer
+    
+
+def train_nb(X_train, y_train, max_features=5000, ngram_range=(1, 2), alpha=1.0):
+    # train a TF-IDF and nb baseline classifier
+    # vectorize text
+    vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range)
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+
+    # train model
+    model = MultinomialNB(alpha=alpha)
+    model.fit(X_train_tfidf, y_train)
+
     return model, vectorizer
 
 
